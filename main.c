@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <string.h>
-#include <consoleapi2.h>
+#include <Windows.h>
 
 // Кодировка консоли Windows-1251 для корректного ввода и вывода русских символов
 #define RUS_ENCODING 1251
