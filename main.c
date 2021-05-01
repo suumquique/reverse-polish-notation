@@ -3,6 +3,10 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <string.h>
+#include <consoleapi2.h>
+
+//  одировка консоли Windows-1251 дл€ корректного ввода и вывода русских символов
+#define RUS_ENCODING 1251
 
 // ћатематические операторы, которые могут встретитьс€ в выражении
 const char operators[] = { '-', '+', '/', '*', '%', '^' };
@@ -10,7 +14,9 @@ const char operators[] = { '-', '+', '/', '*', '%', '^' };
 bool isOperatorMorePrioritized(char firstOperator, char secondOperator);
 
 int main(void) {
-
+	SetConsoleCP(RUS_ENCODING);
+	SetConsoleOutputCP(RUS_ENCODING);
+	
 }
 
 /*¬ качестве аргументов должны передаватьс€ операторы из списка допустимых операторов, в ином случае поведение не определено.
