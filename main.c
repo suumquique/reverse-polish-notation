@@ -9,9 +9,11 @@
 #define RUS_ENCODING 1251
 // Максимальная длина подаваемого на вход математического выражения
 #define MAX_EXPRESSION_LENGTH 2600
+// Константа, показывающая, что в стеке нет операторов
+#define NO_OPERATOR CHAR_MAX
 
 // Математические операторы, которые могут встретиться в выражении
-const char operators[] = { '(', '-', '+', '/', '*', '%', '^' };
+const char operators[] = { '(','-', '+', '/', '*', '%', '^' };
 // Структура стека для операндов (чисел)
 typedef struct _operandStackNode {
 	long long currentNumber;
@@ -26,11 +28,12 @@ typedef struct _operatorStackNode {
 typedef operatorStackNode* operatorStackNodePtr;
 
 bool isOperator(char symbol);
-bool isOperatorMorePrioritized(char firstOperator, char secondOperator);
+bool isFirstOperatorMorePrioritized(char firstOperator, char secondOperator);
 long long performOperation(long long firstOperand, long long secondOperand, char operator);
 void pushOperand(operandStackNodePtr* head, long long number);
 long long popOperand(operandStackNodePtr* head);
 void pushOperator(operatorStackNodePtr* head, char operator);
+char getLastOperator(operatorStackNodePtr head);
 char popOperator(operatorStackNodePtr* head);
 long long charToLongLong(char digit);
 
@@ -45,9 +48,24 @@ int main(void) {
 	operandStackNodePtr operandStackHead = NULL;
 	operatorStackNodePtr operatorStackHead = NULL;
 
+	// Парсим выражение последовательно, слева направо
 	for (size_t i = 0; expression[i]; i++) {
-		// Если мы считываем число, то просто добавляем его в стек операндов
-		if (isdigit(expression[i])) pushOperand(&operandStackHead, charToLongLong(expression[i]));
+		// Текущий символ выражения
+		char currentSymbol = expression[i];
+
+		// Если текущий символ - число, то просто добавляем его в стек операндов
+		if (isdigit(currentSymbol)) pushOperand(&operandStackHead, charToLongLong(currentSymbol));
+
+		// Если текущий символ является оператором
+		else if (isOperator(currentSymbol)) {
+			/* Если в стеке еще нет операторов, то добавляем этот, каким бы он не был (так как не с чем сравнивать);
+			*Если текущий символ - открывающая скобка, не нужно сравнивать приоритеты, требуется просто добавить ее в стек операторов.*/
+			if (operatorStackHead == NULL || currentSymbol == '(') {
+				pushOperator(&operatorStackHead, currentSymbol);
+				continue;
+			}
+			
+		}
 	}
 }
 
@@ -58,9 +76,16 @@ bool isOperator(char symbol) {
 
 /*В качестве аргументов должны передаваться операторы из списка допустимых операторов, в ином случае поведение не определено.
 Если приоритет первого оператора выше (например, первый оператор - умножение, а второй - сложение), возвращается истина; иначе - ложь.*/
-bool isOperatorMorePrioritized(char firstOperator, char secondOperator) {
-	// Если первой оператор находится в списке операторов позднее, значит, имеет больший приоритет
-	return strchr(operators, firstOperator) > strchr(operators, secondOperator);
+bool isFirstOperatorMorePrioritized(char firstOperator, char secondOperator) {
+	// Скобка - всегда приоритетный оператор, ее нельзя убирать из стека до закрывающей скобки
+	if (firstOperator == '(') return true;
+	// Если первый оператор - степень, а второй - нет, то первый точно приоритетнее
+	if (firstOperator == '^' && secondOperator != '^') return true;
+	// Если первый оператор - умножение, деление,  или взятие остатка, то он приоритетнее второго
+	if (strchr("/*%^", firstOperator) && strchr("+-", secondOperator)) return true;
+	
+	// В любом ином случае приоритет первого оператора ниже либо равен второму
+	return false;
 }
 
 // Выполняет арифметическую операцию с двумя числами и указанным оператором
@@ -123,6 +148,12 @@ void pushOperator(operatorStackNodePtr* head, char operator) {
 	newNodePtr->operator = operator;
 	newNodePtr->nextNode = head;
 	*head = newNodePtr;
+}
+
+char getLastOperator(operatorStackNodePtr head) {
+	if (head == NULL) return NO_OPERATOR;
+	
+	return head->operator;
 }
 
 // Удаляет последний элемент стека и возвращает находящийся в нем символ (оператор)
