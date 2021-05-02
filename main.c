@@ -14,6 +14,7 @@
 const char operators[] = { '-', '+', '/', '*', '%', '^' };
 
 bool isOperatorMorePrioritized(char firstOperator, char secondOperator);
+long long performOperation(long long firstOperand, long long secondOperand, char operator);
 
 int main(void) {
 	SetConsoleCP(RUS_ENCODING);
@@ -29,4 +30,25 @@ int main(void) {
 bool isOperatorMorePrioritized(char firstOperator, char secondOperator) {
 	// Если первой оператор находится в списке операторов позднее, значит, имеет больший приоритет
 	return strchr(operators, firstOperator) > strchr(operators, secondOperator);
+}
+
+// Выполняет арифметическую операцию с двумя числами и указанным оператором
+long long performOperation(long long firstOperand, long long secondOperand, char operator) {
+	switch (operator) {
+		case '-':
+			return firstOperand - secondOperand;
+		case '+':
+			return firstOperand + secondOperand;
+		case '/':
+			return firstOperand / secondOperand;
+		case '*': 
+			return firstOperand * secondOperand;
+		case '%':
+			return firstOperand % secondOperand;
+		case '^':
+			return (long long)pow(firstOperand, secondOperand);
+		default:
+			puts("Несуществующий оператор, ошибка");
+			return false;
+	}
 }
