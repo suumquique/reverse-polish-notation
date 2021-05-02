@@ -11,6 +11,8 @@
 #define MAX_EXPRESSION_LENGTH 2600
 // Константа, показывающая, что в стеке нет операторов
 #define NO_OPERATOR CHAR_MAX
+// Код ошибки, показывающий, что изначальное выражение некорректно
+#define ERROR_INCORRECT_EXPRESSION 999
 
 // Математические операторы, которые могут встретиться в выражении
 const char operators[] = { '(','-', '+', '/', '*', '%', '^' };
@@ -37,12 +39,50 @@ char getLastOperator(operatorStackNodePtr head);
 char popOperator(operatorStackNodePtr* head);
 long long charToLongLong(char digit);
 
+void printOperandStack(operandStackNodePtr start_ptr_list)
+{
+	if (start_ptr_list == NULL)
+	{
+		printf("Stack is null\n");
+	}
+	else
+	{
+		printf("Current Stack is:\n");
+		while (start_ptr_list != NULL)
+		{
+			printf("%lld --> ", start_ptr_list->currentNumber);
+			start_ptr_list = start_ptr_list->nextNode;
+		}
+	}
+	printf("null \n");
+}
+
+void printOperatorStack(operatorStackNodePtr start_ptr_list)
+{
+	if (start_ptr_list == NULL)
+	{
+		printf("Stack is null\n");
+	}
+	else
+	{
+		printf("Current Stack is:\n");
+		while (start_ptr_list != NULL)
+		{
+			printf("%c --> ", start_ptr_list->operator);
+			start_ptr_list = start_ptr_list->nextNode;
+		}
+	}
+	printf("null \n");
+}
+
 int main(void) {
 	SetConsoleCP(RUS_ENCODING);
 	SetConsoleOutputCP(RUS_ENCODING);
 	
-	char expression[MAX_EXPRESSION_LENGTH] = { 0 };
-	puts("Введите корректное математическое выражение в стандартной (инфиксной) форме:\n");
+	char currentSymbol, currentOperator, previousOperator; // Символьные переменные для парсинга строки
+	long long firstOperand, secondOperand, arithmeticResult; // Переменные для промежуточных вычислений
+	char expression[MAX_EXPRESSION_LENGTH] = { 0 }; // Строка для хранения математического выражения
+	puts("Введите корректное математическое выражение в стандартной (инфиксной) форме:");
 	gets_s(expression, MAX_EXPRESSION_LENGTH);
 
 	operandStackNodePtr operandStackHead = NULL;
@@ -51,23 +91,84 @@ int main(void) {
 	// Парсим выражение последовательно, слева направо
 	for (size_t i = 0; expression[i]; i++) {
 		// Текущий символ выражения
-		char currentSymbol = expression[i];
+		currentSymbol = expression[i];
 
 		// Если текущий символ - число, то просто добавляем его в стек операндов
 		if (isdigit(currentSymbol)) pushOperand(&operandStackHead, charToLongLong(currentSymbol));
 
 		// Если текущий символ является оператором
 		else if (isOperator(currentSymbol)) {
+			currentOperator = currentSymbol;
+
 			/* Если в стеке еще нет операторов, то добавляем этот, каким бы он не был (так как не с чем сравнивать);
-			*Если текущий символ - открывающая скобка, не нужно сравнивать приоритеты, требуется просто добавить ее в стек операторов.*/
-			if (operatorStackHead == NULL || currentSymbol == '(') {
-				pushOperator(&operatorStackHead, currentSymbol);
+			* Если текущий символ - открывающая скобка, не нужно сравнивать приоритеты, требуется просто добавить ее в стек операторов. */
+			if (operatorStackHead == NULL || currentOperator == '(') {
+				pushOperator(&operatorStackHead, currentOperator);
 				continue;
 			}
 			
+			// Если текущий оператор имеет приоритет строго выше, чем последний оператор в стеке
+			if (isFirstOperatorMorePrioritized(currentOperator, getLastOperator(operatorStackHead))) {
+				pushOperator(&operatorStackHead, currentOperator);
+			}
+			/* Если приоритет иной, то нужно достать последний оператор из стека и выполнить соответствующую операцию для 
+			* двух последних чисел из стека операндов */
+			else {
+				// Вынимаем из стека предыдущий оператор и добавляем текущий
+				previousOperator = popOperator(&operatorStackHead);
+				pushOperator(&operatorStackHead, currentOperator);
+
+				/* Вынутое первым число - второй оператор, так как оно было добавлено в стек позже.
+				Это важно при многих операциях, таких как вычитание, деление, взятие остатка и возведение в степень */
+				secondOperand = popOperand(&operandStackHead), firstOperand = popOperand(&operandStackHead);
+				// Вычисляем значение выражения с этими двумя чилами и взятым из стека оператором
+				arithmeticResult = performOperation(firstOperand, secondOperand, previousOperator);
+				// Добавляем получившееся значение в стек чисел (операндов)
+				pushOperand(&operandStackHead, arithmeticResult);
+			}
+		}
+		// Случай, когда текущий символ - закрывающая скобка, обрабатываем отдельно, так как действия там кардинально отличаются
+		else if (currentSymbol == ')') {
+			while ((currentOperator = popOperator(&operatorStackHead)) != '(' && operatorStackHead != NULL) {
+
+				/* Вынутое первым число - второй оператор, так как оно было добавлено в стек позже.
+				Это важно при многих операциях, таких как вычитание, деление, взятие остатка и возведение в степень */
+				secondOperand = popOperand(&operandStackHead), firstOperand = popOperand(&operandStackHead);
+				// Вычисляем значение выражения с этими двумя чилами и взятым из стека оператором
+				arithmeticResult = performOperation(firstOperand, secondOperand, currentOperator);
+				// Добавляем получившееся значение в стек чисел (операндов)
+				pushOperand(&operandStackHead, arithmeticResult);
+			}
+
+			if (currentOperator == NO_OPERATOR) {
+				puts("Произошла ошибка в скобочных группах. Некорректное уравнение.");
+				exit(ERROR_INCORRECT_EXPRESSION);
+			}
+
+		}
+		else {
+			printf("Ошибка в парсинге выражения - некорректный символ: %c\n", currentSymbol);
+			exit(ERROR_INCORRECT_EXPRESSION);
 		}
 	}
+	
+	while (operatorStackHead != NULL) {
+		// Вынимаем из стека предыдущий оператор и добавляем текущий
+		previousOperator = popOperator(&operatorStackHead);
+
+		/* Вынутое первым число - второй оператор, так как оно было добавлено в стек позже.
+		Это важно при многих операциях, таких как вычитание, деление, взятие остатка и возведение в степень */
+		secondOperand = popOperand(&operandStackHead), firstOperand = popOperand(&operandStackHead);
+		// Вычисляем значение выражения с этими двумя чилами и взятым из стека оператором
+		arithmeticResult = performOperation(firstOperand, secondOperand, previousOperator);
+		// Добавляем получившееся значение в стек чисел (операндов)
+		pushOperand(&operandStackHead, arithmeticResult);
+	}
+
+	arithmeticResult = popOperand(&operandStackHead);
+	printf("\nArithmetic result: %lld\n", arithmeticResult);
 }
+
 
 // Проверяет, является ли введенный символ оператором (без учета закрывающей скобки)
 bool isOperator(char symbol) {
@@ -77,12 +178,13 @@ bool isOperator(char symbol) {
 /*В качестве аргументов должны передаваться операторы из списка допустимых операторов, в ином случае поведение не определено.
 Если приоритет первого оператора выше (например, первый оператор - умножение, а второй - сложение), возвращается истина; иначе - ложь.*/
 bool isFirstOperatorMorePrioritized(char firstOperator, char secondOperator) {
-	// Скобка - всегда приоритетный оператор, ее нельзя убирать из стека до закрывающей скобки
-	if (firstOperator == '(') return true;
+	// Скобка - всегда низкоприоритетный оператор, ее нельзя убирать из стека до закрывающей скобки
+	if (firstOperator == '(') return false;
+	if (secondOperator == '(') return true;
 	// Если первый оператор - степень, а второй - нет, то первый точно приоритетнее
 	if (firstOperator == '^' && secondOperator != '^') return true;
 	// Если первый оператор - умножение, деление,  или взятие остатка, то он приоритетнее второго
-	if (strchr("/*%^", firstOperator) && strchr("+-", secondOperator)) return true;
+	if (strchr("/*%", firstOperator) && strchr("+-", secondOperator)) return true;
 	
 	// В любом ином случае приоритет первого оператора ниже либо равен второму
 	return false;
@@ -104,7 +206,7 @@ long long performOperation(long long firstOperand, long long secondOperand, char
 		case '^':
 			return (long long)pow(firstOperand, secondOperand);
 		default:
-			puts("Несуществующий оператор, ошибка");
+			printf("Ошибка: Несуществующий оператор - %c\n", operator);
 			return false;
 	}
 }
@@ -119,7 +221,7 @@ void pushOperand(operandStackNodePtr* head, long long number) {
 	}
 
 	newNodePtr->currentNumber = number;
-	newNodePtr->nextNode = head;
+	newNodePtr->nextNode = *head;
 	*head = newNodePtr;
 }
 
@@ -146,10 +248,11 @@ void pushOperator(operatorStackNodePtr* head, char operator) {
 	}
 
 	newNodePtr->operator = operator;
-	newNodePtr->nextNode = head;
+	newNodePtr->nextNode = *head;
 	*head = newNodePtr;
 }
 
+// Получает последний оператор, не изменяя стек
 char getLastOperator(operatorStackNodePtr head) {
 	if (head == NULL) return NO_OPERATOR;
 	
@@ -158,7 +261,7 @@ char getLastOperator(operatorStackNodePtr head) {
 
 // Удаляет последний элемент стека и возвращает находящийся в нем символ (оператор)
 char popOperator(operatorStackNodePtr* head) {
-	if (*head == NULL) return ERROR_SUCCESS;
+	if (*head == NULL) return NO_OPERATOR;
 
 	operatorStackNodePtr tempNodePtr = *head;
 	char currentOperator = (*head)->operator;
