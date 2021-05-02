@@ -12,9 +12,25 @@
 
 // Математические операторы, которые могут встретиться в выражении
 const char operators[] = { '-', '+', '/', '*', '%', '^' };
+// Структура стека для операндов (чисел)
+typedef struct _operandStackNode {
+	long long currentNumber;
+	struct _operandStackNode* nextNode;
+} operandStackNode;
+typedef operandStackNode* operandStackNodePtr;
+// Структура стека для операторов (математические операторы, такие как "+", "-", "*" и так далее)
+typedef struct _operatorStackNode {
+	char operator;
+	struct _operatorStackNode* nextNode;
+} operatorStackNode;
+typedef operatorStackNode* operatorStackNodePtr;
 
 bool isOperatorMorePrioritized(char firstOperator, char secondOperator);
 long long performOperation(long long firstOperand, long long secondOperand, char operator);
+void pushOperand(operandStackNodePtr* head, long long number);
+long long popOperand(operandStackNodePtr* head);
+void pushOperator(operatorStackNodePtr* head, char operator);
+char popOperator(operatorStackNodePtr* head);
 
 int main(void) {
 	SetConsoleCP(RUS_ENCODING);
@@ -23,6 +39,8 @@ int main(void) {
 	char expression[MAX_EXPRESSION_LENGTH] = { 0 };
 	puts("Введите корректное математическое выражение в стандартной (инфиксной) форме:\n");
 	gets_s(expression, MAX_EXPRESSION_LENGTH);
+
+
 }
 
 /*В качестве аргументов должны передаваться операторы из списка допустимых операторов, в ином случае поведение не определено.
@@ -51,4 +69,58 @@ long long performOperation(long long firstOperand, long long secondOperand, char
 			puts("Несуществующий оператор, ошибка");
 			return false;
 	}
+}
+
+// Добавляет указанное чиcло в стек
+void pushOperand(operandStackNodePtr* head, long long number) {
+	operandStackNodePtr newNodePtr = (operandStackNodePtr) calloc(1, sizeof(operandStackNode));
+
+	if (newNodePtr == NULL) {
+		printf("Ошибка при добавлении элемента со значением %lld в стек чисел: недостаточно памяти.", number);
+		return;
+	}
+
+	newNodePtr->currentNumber = number;
+	newNodePtr->nextNode = head;
+	*head = newNodePtr;
+}
+
+// Удаляет последний элемент стека операндов и возвращает находящееся в нем число
+long long popOperand(operandStackNodePtr* head) {
+	if (*head == NULL) return ERROR_SUCCESS;
+
+	operandStackNodePtr tempNodePtr = *head;
+	long long currentNumber = (*head)->currentNumber;
+	*head = (*head)->nextNode;
+
+	free(tempNodePtr);
+
+	return currentNumber;
+}
+
+// Добавляет указанный оператор в виде символа в стек 
+void pushOperator(operatorStackNodePtr* head, char operator) {
+	operatorStackNodePtr newNodePtr = (operatorStackNodePtr)calloc(1, sizeof(operatorStackNode));
+
+	if (newNodePtr == NULL) {
+		printf("Ошибка при добавлении элемента со значением %c в стек операторов: недостаточно памяти.", operator);
+		return;
+	}
+
+	newNodePtr->operator = operator;
+	newNodePtr->nextNode = head;
+	*head = newNodePtr;
+}
+
+// Удаляет последний элемент стека и возвращает находящийся в нем символ (оператор)
+char popOperator(operatorStackNodePtr* head) {
+	if (*head == NULL) return ERROR_SUCCESS;
+
+	operatorStackNodePtr tempNodePtr = *head;
+	char currentOperator = (*head)->operator;
+	*head = (*head)->nextNode;
+
+	free(tempNodePtr);
+
+	return currentOperator;
 }
