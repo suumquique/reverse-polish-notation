@@ -11,7 +11,7 @@
 #define MAX_EXPRESSION_LENGTH 2600
 
 // Математические операторы, которые могут встретиться в выражении
-const char operators[] = { '-', '+', '/', '*', '%', '^' };
+const char operators[] = { '(', '-', '+', '/', '*', '%', '^' };
 // Структура стека для операндов (чисел)
 typedef struct _operandStackNode {
 	long long currentNumber;
@@ -25,12 +25,14 @@ typedef struct _operatorStackNode {
 } operatorStackNode;
 typedef operatorStackNode* operatorStackNodePtr;
 
+bool isOperator(char symbol);
 bool isOperatorMorePrioritized(char firstOperator, char secondOperator);
 long long performOperation(long long firstOperand, long long secondOperand, char operator);
 void pushOperand(operandStackNodePtr* head, long long number);
 long long popOperand(operandStackNodePtr* head);
 void pushOperator(operatorStackNodePtr* head, char operator);
 char popOperator(operatorStackNodePtr* head);
+long long charToLongLong(char digit);
 
 int main(void) {
 	SetConsoleCP(RUS_ENCODING);
@@ -40,7 +42,18 @@ int main(void) {
 	puts("Введите корректное математическое выражение в стандартной (инфиксной) форме:\n");
 	gets_s(expression, MAX_EXPRESSION_LENGTH);
 
+	operandStackNodePtr operandStackHead = NULL;
+	operatorStackNodePtr operatorStackHead = NULL;
 
+	for (size_t i = 0; expression[i]; i++) {
+		// Если мы считываем число, то просто добавляем его в стек операндов
+		if (isdigit(expression[i])) pushOperand(&operandStackHead, charToLongLong(expression[i]));
+	}
+}
+
+// Проверяет, является ли введенный символ оператором (без учета закрывающей скобки)
+bool isOperator(char symbol) {
+	strchr(operators, symbol) == NULL ? false : true;
 }
 
 /*В качестве аргументов должны передаваться операторы из списка допустимых операторов, в ином случае поведение не определено.
@@ -123,4 +136,9 @@ char popOperator(operatorStackNodePtr* head) {
 	free(tempNodePtr);
 
 	return currentOperator;
+}
+
+// Конвертирует цифру, записанную в виде символа типа char, в значение long long int
+long long charToLongLong(char digit) {
+	return (long long) digit - '0';
 }
