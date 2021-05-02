@@ -39,42 +39,6 @@ char getLastOperator(operatorStackNodePtr head);
 char popOperator(operatorStackNodePtr* head);
 long long charToLongLong(char digit);
 
-void printOperandStack(operandStackNodePtr start_ptr_list)
-{
-	if (start_ptr_list == NULL)
-	{
-		printf("Stack is null\n");
-	}
-	else
-	{
-		printf("Current Stack is:\n");
-		while (start_ptr_list != NULL)
-		{
-			printf("%lld --> ", start_ptr_list->currentNumber);
-			start_ptr_list = start_ptr_list->nextNode;
-		}
-	}
-	printf("null \n");
-}
-
-void printOperatorStack(operatorStackNodePtr start_ptr_list)
-{
-	if (start_ptr_list == NULL)
-	{
-		printf("Stack is null\n");
-	}
-	else
-	{
-		printf("Current Stack is:\n");
-		while (start_ptr_list != NULL)
-		{
-			printf("%c --> ", start_ptr_list->operator);
-			start_ptr_list = start_ptr_list->nextNode;
-		}
-	}
-	printf("null \n");
-}
-
 int main(void) {
 	SetConsoleCP(RUS_ENCODING);
 	SetConsoleOutputCP(RUS_ENCODING);
